@@ -1,0 +1,9 @@
+name: drivedropboxfs
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.6
+  - paramiko
+  - requests
+  - numpydoc

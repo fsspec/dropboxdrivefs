@@ -1,0 +1,20 @@
+package:
+   name: dropboxdrivefs
+   version: 1.0.0
+
+source:
+   git_url: ..
+
+build:
+   number: 0
+   script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+requirements:
+   host:
+     - python
+     - pip
+   run:
+     - python
+     - fsspec
+     - requests
+     - dropbox
