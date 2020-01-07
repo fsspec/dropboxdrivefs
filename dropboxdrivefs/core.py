@@ -1,8 +1,9 @@
 import requests
 import dropbox
-from ..spec import AbstractFileSystem, AbstractBufferedFile
-from .http import HTTPFile
+from fsspec.spec import AbstractFileSystem, AbstractBufferedFile
+from fsspec.implementations.http import HTTPFile
 
+__all__ = ["DropboxDriveFileSystem"]
 
 class DropboxDriveFileSystem(AbstractFileSystem):
     """ Interface dropbox to connect, list and manage files
