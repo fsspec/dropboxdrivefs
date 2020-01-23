@@ -7,7 +7,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
      name="dropboxdrivefs",
-     version="1.0.2",
+     version="1.0.3",
      packages=["dropboxdrivefs"],
      install_requires=[
                        "fsspec",
@@ -16,8 +16,9 @@ setup(
                        ],
      author="Marine Chaput",
      author_email="marine.chaput@hotmail.fr",
-     description="Dropbox implementation for Intake module",
+     description="Dropbox implementation for fsspec module",
      long_description = long_description,
+     long_description_content_type = 'text/markdown',
      classifiers=[
                 "Development Status :: 3 - Alpha",
                 "Intended Audience :: Developers",
