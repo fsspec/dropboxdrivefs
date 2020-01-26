@@ -18,7 +18,7 @@ Documentation of the fsspec module : https://github.com/intake/filesystem_spec/b
 
 ## Install
 
-```bash
+```
 pip install dropboxdrivefs
 ```
 
