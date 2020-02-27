@@ -68,6 +68,20 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         cache_options=None,
         **kwargs
     ):
+
+        path = path.replace("//", "/")
+        if mode == "rb":
+            url = self.dbx.files_get_temporary_link(path).link
+            session = self.session if self.session is not None else requests.Session()
+            return HTTPFile(
+                self,
+                url,
+                session,
+                mode=mode,
+                cache_options=cache_options,
+                size=self.info(path)["size"],
+            )
+
         return DropboxDriveFile(
             self,
             path,
@@ -126,23 +140,12 @@ class DropboxDriveFile(AbstractBufferedFile):
 
         self.path = path
         self.dbx = self.fs.dbx
-        path = path.replace("//", "/")
-        if mode == "rb":
-            self.url = self.dbx.files_get_temporary_link(path).link
-            self.session = fs.session if fs.session is not None else requests.Session()
-            self.httpfile = HTTPFile(
-                fs,
-                self.url,
-                self.session,
-                mode=mode,
-                cache_options=cache_options,
-                size=fs.info(path)["size"],
-            )
 
-    def read(self, length=-1):
-        """Read bytes from file via the http
-        """
-        return self.httpfile.read(length=length)
+
+    #def read(self, length=-1):
+        #"""Read bytes from file via the http
+        #"""
+        #return self.httpfile.read(length=length)
 
     def _upload_chunk(self, final=False):
         self.cursor.offset += self.buffer.seek(0, 2)
