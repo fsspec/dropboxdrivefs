@@ -27,6 +27,7 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         self.session = requests.Session()
         self.session.auth = ("Authorization", self.token)
 
+
     def ls(self, path, detail=True, **kwargs):
         """ List objects at path
         """
@@ -37,26 +38,12 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         )
         items = list_item.entries
         while list_item.has_more:
+
             list_item = self.dbx.files_list_folder_continue(list_item.cursor)
             items = list_item.entries + items
 
-        if detail:
-            for item in list_item.entries:
-                if isinstance(item, dropbox.files.FileMetadata):
-                    list_file.append(
-                        {"name": item.path_display, "size": item.size, "type": "file"}
-                    )
-                elif isinstance(item, dropbox.files.FolderMetadata):
-                    list_file.append(
-                        {"name": item.path_display, "size": None, "type": "directory"}
-                    )
-                else:
-                    list_file.append(
-                        {"name": item.path_display, "size": item.size, "type": "unknow"}
-                    )
-        else:
-            for item in list_item.entries:
-                list_file.append(item.path_display)
+        for metadata in list_item.entries:
+            list_file.append(self._refactor_metadata(metadata, detail=detail))
         return list_file
 
     def _open(
@@ -96,16 +83,22 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         """Get info of URL
         """
         metadata = self.dbx.files_get_metadata(url)
-        if isinstance(metadata, dropbox.files.FileMetadata):
-            return {
-                "name": metadata.path_display,
-                "size": metadata.size,
-                "type": "file",
-            }
-        elif isinstance(metadata, dropbox.files.FolderMetadata):
-            return {"name": metadata.path_display, "size": None, "type": "directory"}
+        return self._refactor_metadata(metadata)
+
+    def _refactor_metadata(self, metadata, detail=True):
+        if detail :
+            if isinstance(metadata, dropbox.files.FileMetadata):
+                return {
+                    "name": metadata.path_display,
+                    "size": metadata.size,
+                    "type": "file",
+                }
+            elif isinstance(metadata, dropbox.files.FolderMetadata):
+                return {"name": metadata.path_display, "size": None, "type": "directory"}
+            else:
+                return {"name": metadata.path_display, "size": None, "type": None}
         else:
-            return {"name": url, "size": None, "type": "unknow"}
+            return metadata.path_display
 
 
 class DropboxDriveFile(AbstractBufferedFile):

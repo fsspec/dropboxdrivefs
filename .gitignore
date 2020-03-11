@@ -2,3 +2,7 @@ build
 *.egg-info
 *py[cod]
 .DS*
+.cache
+.ipy*
+dist
+.idea
