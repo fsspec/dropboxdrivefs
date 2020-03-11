@@ -5,8 +5,6 @@ This package is one of the implementation available in the fsspec module. It can
 dropbox://file_path
 ```
 
-Be careful: There are for the moment at least no unity/integration tests on this implementation (alpha version).
-
 It can also be used directly from the fsspec module to download and upload files in the github account.
 
 The upload part is using the dropbox API.
