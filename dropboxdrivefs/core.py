@@ -1,9 +1,14 @@
+import logging
+
+import dropbox.files
 import requests
-import dropbox
-from fsspec.spec import AbstractFileSystem, AbstractBufferedFile
+from dropbox.exceptions import ApiError
 from fsspec.implementations.http import HTTPFile
+from fsspec.spec import AbstractBufferedFile
+from fsspec.spec import AbstractFileSystem
 
 __all__ = ["DropboxDriveFileSystem"]
+
 
 class DropboxDriveFileSystem(AbstractFileSystem):
     """ Interface dropbox to connect, list and manage files
@@ -17,6 +22,7 @@ class DropboxDriveFileSystem(AbstractFileSystem):
 
     def __init__(self, token, *args, **storage_options):
         super().__init__(token=token, *args, **storage_options)
+        logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
         self.token = token
         self.connect()
 
@@ -27,24 +33,55 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         self.session = requests.Session()
         self.session.auth = ("Authorization", self.token)
 
-
     def ls(self, path, detail=True, **kwargs):
         """ List objects at path
         """
         path = path.replace("//", "/")
         list_file = []
-        list_item = self.dbx.files_list_folder(
-            path, recursive=True, include_media_info=True
-        )
-        items = list_item.entries
-        while list_item.has_more:
 
-            list_item = self.dbx.files_list_folder_continue(list_item.cursor)
-            items = list_item.entries + items
+        try:
+            list_item = self.dbx.files_list_folder(
+                path, recursive=True, include_media_info=True
+            )
+        except ApiError as error:
+            logging.warning(error)
+            return None
+        else:
+            items = list_item.entries
+            while list_item.has_more:
 
-        for metadata in list_item.entries:
-            list_file.append(self._refactor_metadata(metadata, detail=detail))
-        return list_file
+                list_item = self.dbx.files_list_folder_continue(list_item.cursor)
+                items = list_item.entries + items
+
+            for metadata in list_item.entries:
+                list_file.append(self._refactor_metadata(metadata, detail=detail))
+            return list_file
+
+    def mkdir(self, path, create_parent=True, autorename=True):
+        try:
+            output = self.dbx.files_create_folder_v2(path)
+            metadata = self._refactor_metadata(output.metadata)
+            logging.info(
+                "The " + metadata["type"] + metadata["name"] + " has  been created."
+            )
+        except ApiError as error:
+            logging.warning(error)
+
+    def _rm(self, path):
+        try:
+            output = self.dbx.files_delete_v2(path)
+            metadata = self._refactor_metadata(output.metadata)
+            logging.info(
+                "The " + metadata["type"] + metadata["name"] + " has been erased."
+            )
+        except ApiError as error:
+            logging.warning(error)
+
+    def info(self, url, **kwargs):
+        """Get info of URL
+        """
+        metadata = self.dbx.files_get_metadata(url)
+        return self._refactor_metadata(metadata)
 
     def _open(
         self,
@@ -79,14 +116,8 @@ class DropboxDriveFileSystem(AbstractFileSystem):
             **kwargs
         )
 
-    def info(self, url, **kwargs):
-        """Get info of URL
-        """
-        metadata = self.dbx.files_get_metadata(url)
-        return self._refactor_metadata(metadata)
-
     def _refactor_metadata(self, metadata, detail=True):
-        if detail :
+        if detail:
             if isinstance(metadata, dropbox.files.FileMetadata):
                 return {
                     "name": metadata.path_display,
@@ -134,11 +165,10 @@ class DropboxDriveFile(AbstractBufferedFile):
         self.path = path
         self.dbx = self.fs.dbx
 
-
-    #def read(self, length=-1):
-        #"""Read bytes from file via the http
-        #"""
-        #return self.httpfile.read(length=length)
+    # def read(self, length=-1):
+    # """Read bytes from file via the http
+    # """
+    # return self.httpfile.read(length=length)
 
     def _upload_chunk(self, final=False):
         self.cursor.offset += self.buffer.seek(0, 2)
