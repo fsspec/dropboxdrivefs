@@ -155,7 +155,7 @@ class DropboxDriveFile(AbstractBufferedFile):
         path : str
             file path to inspect in dropbox
         mode: str
-            Normal file modes.'rb' or 'wb'
+            Normal file modes.'rb', 'wb' or 'ab'
         block_size: int or None
             The amount of read-ahead to do, in bytes. Default is 5MB, or the value
             configured for the FileSystem creating this file
@@ -171,21 +171,35 @@ class DropboxDriveFile(AbstractBufferedFile):
     # return self.httpfile.read(length=length)
 
     def _upload_chunk(self, final=False):
-        self.cursor.offset += self.buffer.seek(0, 2)
         if final:
+
             self.dbx.files_upload_session_finish(
                 self.buffer.getvalue(), self.cursor, self.commit
             )
         else:
-            self.dbx.files_upload_session_append(
+
+            self.dbx.files_upload_session_append_v2(
                 self.buffer.getvalue(), self.cursor.session_id, self.cursor.offset
             )
+
+        self.cursor.offset += self.buffer.seek(0, 2)
 
     def _initiate_upload(self):
         """ Initiate the upload session
         """
-        session = self.dbx.files_upload_session_start(self.buffer.getvalue())
-        self.commit = dropbox.files.CommitInfo(path=self.path)
+
+        session = self.dbx.files_upload_session_start(b"")
+
+        if "w" in self.mode:
+            self.commit = dropbox.files.CommitInfo(
+                path=self.path, mode=dropbox.files.WriteMode("overwrite", None)
+            )
+        elif "a" in self.mode:
+            self.commit = dropbox.files.CommitInfo(
+                path=self.path, mode=dropbox.files.WriteMode("add")
+            )
+
         self.cursor = dropbox.files.UploadSessionCursor(
             session_id=session.session_id, offset=self.offset
         )
+        print(self.offset)
