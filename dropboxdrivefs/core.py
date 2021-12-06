@@ -3,7 +3,7 @@ import logging
 import dropbox.files
 import requests
 from dropbox.exceptions import ApiError
-from fsspec.implementations.http import HTTPFile
+from fsspec.implementations.webhdfs import WebHDFile as HTTPFile
 from fsspec.spec import AbstractBufferedFile
 from fsspec.spec import AbstractFileSystem
 
@@ -96,14 +96,14 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         path = path.replace("//", "/")
         if mode == "rb":
             url = self.dbx.files_get_temporary_link(path).link
-            session = self.session if self.session is not None else requests.Session()
             return HTTPFile(
                 self,
                 url,
-                session,
                 mode=mode,
                 cache_options=cache_options,
                 size=self.info(path)["size"],
+                tempdir=None,
+                autocommit=True
             )
 
         return DropboxDriveFile(
@@ -148,14 +148,15 @@ class DropboxDriveFile(AbstractBufferedFile):
         **kwargs
     ):
         """
-        Open a file.
+        Open a file, write mode only
+
         Parameters
         ----------
         fs: instance of DropboxDriveFileSystem
         path : str
             file path to inspect in dropbox
         mode: str
-            Normal file modes.'rb', 'wb' or 'ab'
+            most be "wb"
         block_size: int or None
             The amount of read-ahead to do, in bytes. Default is 5MB, or the value
             configured for the FileSystem creating this file
@@ -164,11 +165,6 @@ class DropboxDriveFile(AbstractBufferedFile):
 
         self.path = path
         self.dbx = self.fs.dbx
-
-    # def read(self, length=-1):
-    # """Read bytes from file via the http
-    # """
-    # return self.httpfile.read(length=length)
 
     def _upload_chunk(self, final=False):
         if final:
@@ -202,4 +198,3 @@ class DropboxDriveFile(AbstractBufferedFile):
         self.cursor = dropbox.files.UploadSessionCursor(
             session_id=session.session_id, offset=self.offset
         )
-        print(self.offset)

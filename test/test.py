@@ -33,6 +33,7 @@ class TestDropboxOpen(unittest.TestCase):
     @patch.object(dropbox.Dropbox, "files_get_temporary_link")
     @patch.object(dropboxdrivefs.DropboxDriveFileSystem, "info")
     def test_open_rb(self, moke_info, moke_link):
+        import fsspec.implementations.webhdfs
 
         temp_link = dropbox.files.GetTemporaryLinkResult()
         temp_link.metadata = dropbox.files.FileMetadata(name="file1.txt")
@@ -43,7 +44,7 @@ class TestDropboxOpen(unittest.TestCase):
 
         reader = self.fs._open("/Home/folder1", mode="rb")
 
-        self.assertIsInstance(reader, fsspec.implementations.http.HTTPFile)
+        self.assertIsInstance(reader, fsspec.implementations.webhdfs.WebHDFile)
 
     def test_open_wb(self):
         with patch("dropboxdrivefs.core.DropboxDriveFile") as mock_subclass:
