@@ -3,7 +3,7 @@ import logging
 import dropbox.files
 import requests
 from dropbox.exceptions import ApiError
-from fsspec.implementations.http import HTTPFile
+from fsspec.implementations import webhdfs
 from fsspec.spec import AbstractBufferedFile
 from fsspec.spec import AbstractFileSystem
 
@@ -22,9 +22,22 @@ class DropboxDriveFileSystem(AbstractFileSystem):
 
     def __init__(self, token, *args, **storage_options):
         super().__init__(token=token, *args, **storage_options)
-        logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
         self.token = token
         self.connect()
+
+    def _call(self, _, method="get", path=None, data=None, redirect=True, offset=0, length=None,
+              **kwargs):
+        headers = {"Range": f"bytes={offset}-{offset+length+1}"}
+
+        out = self.session.request(
+            method=method.upper(),
+            url=path,
+            data=data,
+            allow_redirects=redirect,
+            headers=headers
+        )
+        out.raise_for_status()
+        return out
 
     def connect(self):
         """ connect to the dropbox account with the given token
@@ -96,14 +109,14 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         path = path.replace("//", "/")
         if mode == "rb":
             url = self.dbx.files_get_temporary_link(path).link
-            session = self.session if self.session is not None else requests.Session()
-            return HTTPFile(
+            return webhdfs.WebHDFile(
                 self,
                 url,
-                session,
                 mode=mode,
                 cache_options=cache_options,
                 size=self.info(path)["size"],
+                tempdir=None,
+                autocommit=True
             )
 
         return DropboxDriveFile(
@@ -148,27 +161,25 @@ class DropboxDriveFile(AbstractBufferedFile):
         **kwargs
     ):
         """
-        Open a file.
+        Open a file, write mode only
+
         Parameters
         ----------
         fs: instance of DropboxDriveFileSystem
         path : str
             file path to inspect in dropbox
         mode: str
-            Normal file modes.'rb', 'wb' or 'ab'
+            most be "wb"
         block_size: int or None
             The amount of read-ahead to do, in bytes. Default is 5MB, or the value
             configured for the FileSystem creating this file
         """
-        super().__init__(fs=fs, path=path, mode=mode, block_size=block_size, **kwargs)
+        super().__init__(fs=fs, path=path, mode=mode, block_size=block_size,
+                         cache_type=cache_type, cache_options=cache_options,
+                         **kwargs)
 
         self.path = path
         self.dbx = self.fs.dbx
-
-    # def read(self, length=-1):
-    # """Read bytes from file via the http
-    # """
-    # return self.httpfile.read(length=length)
 
     def _upload_chunk(self, final=False):
         if final:
@@ -202,4 +213,3 @@ class DropboxDriveFile(AbstractBufferedFile):
         self.cursor = dropbox.files.UploadSessionCursor(
             session_id=session.session_id, offset=self.offset
         )
-        print(self.offset)
