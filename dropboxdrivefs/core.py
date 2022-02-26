@@ -131,15 +131,26 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         )
 
     def _refactor_metadata(self, metadata, detail=True):
+
         if detail:
+            meta = {}
+
+            for prop in vars(type(metadata)).keys():
+                if not prop.startswith('_'):
+                    meta[prop] = getattr(metadata, prop, None)
+
             if isinstance(metadata, dropbox.files.FileMetadata):
-                return {
-                    "name": metadata.path_display,
-                    "size": metadata.size,
-                    "type": "file",
-                }
+                meta["name"] = metadata.path_display
+                meta["size"] = metadata.size
+                meta["type"] ="file"
+
+                return meta
+
             elif isinstance(metadata, dropbox.files.FolderMetadata):
-                return {"name": metadata.path_display, "size": None, "type": "directory"}
+                meta["name"] = metadata.path_display
+                meta["size"] = None
+                meta["type"] ="directory"
+                return meta
             else:
                 return {"name": metadata.path_display, "size": None, "type": None}
         else:

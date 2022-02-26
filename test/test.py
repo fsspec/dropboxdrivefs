@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch
 
 import dropbox
-import fsspec
 
 import dropboxdrivefs
 from dropboxdrivefs import DropboxDriveFileSystem
