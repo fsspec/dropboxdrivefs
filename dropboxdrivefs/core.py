@@ -1,4 +1,5 @@
 import logging
+import os.path
 
 import dropbox.files
 import requests
@@ -66,7 +67,7 @@ class DropboxDriveFileSystem(AbstractFileSystem):
                 list_item = self.dbx.files_list_folder_continue(list_item.cursor)
                 items = list_item.entries + items
 
-            for metadata in list_item.entries:
+            for metadata in items:
                 list_file.append(self._refactor_metadata(metadata, detail=detail))
             return list_file
 
@@ -203,11 +204,11 @@ class DropboxDriveFile(AbstractBufferedFile):
 
         if "w" in self.mode:
             self.commit = dropbox.files.CommitInfo(
-                path=self.path, mode=dropbox.files.WriteMode("overwrite", None)
+                path=self.path, mode=dropbox.files.WriteMode("overwrite", None), autorename=True
             )
         elif "a" in self.mode:
             self.commit = dropbox.files.CommitInfo(
-                path=self.path, mode=dropbox.files.WriteMode("add")
+                path=self.path, mode=dropbox.files.WriteMode("add", None), autorename=True
             )
 
         self.cursor = dropbox.files.UploadSessionCursor(
