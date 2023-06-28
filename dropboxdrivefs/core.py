@@ -18,6 +18,19 @@ class DropboxDriveFileSystem(AbstractFileSystem):
     token : str
           Generated key by adding a dropbox app in the user dropbox account.
           Needs to be done by the user
+    client : Dropbox
+          Instead of passing a token, you can give a instance of a Dropbox class.
+          This is useful when using the Dropbox Business API.
+
+    Example:
+    -------
+    ```python
+    import dropbox
+    from dropboxdrivefs import DropboxDriveFileSystem
+
+    dbx = dropbox.DropboxTeam(...)
+    fs = DropboxDriveFileSystem(client=dbx.as_user(...))
+    ```
     """
 
     def __init__(self, token=None, client=None, *args, **storage_options):
