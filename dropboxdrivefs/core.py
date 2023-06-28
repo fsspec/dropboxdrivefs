@@ -18,34 +18,17 @@ class DropboxDriveFileSystem(AbstractFileSystem):
     token : str
           Generated key by adding a dropbox app in the user dropbox account.
           Needs to be done by the user
-
     """
 
-    def __init__(self, token, *args, **storage_options):
-        super().__init__(token=token, *args, **storage_options)
-        self.token = token
-        self.connect()
+    def __init__(self, token=None, client=None, *args, **storage_options):
+        super().__init__(token=token, client=client, *args, **storage_options)
 
-    def _call(self, _, method="get", path=None, data=None, redirect=True, offset=0, length=None,
-              **kwargs):
-        headers = {"Range": f"bytes={offset}-{offset+length+1}"}
-
-        out = self.session.request(
-            method=method.upper(),
-            url=path,
-            data=data,
-            allow_redirects=redirect,
-            headers=headers
-        )
-        out.raise_for_status()
-        return out
-
-    def connect(self):
-        """ connect to the dropbox account with the given token
-        """
-        self.dbx = dropbox.Dropbox(self.token)
-        self.session = requests.Session()
-        self.session.auth = ("Authorization", self.token)
+        if client is not None:
+            self.dbx = client
+        elif token is not None:
+            self.dbx = dropbox.Dropbox(token)
+        else:
+            raise RuntimeError("You must provide either a token or a dropbox client object.")
 
     def ls(self, path, detail=True, **kwargs):
         """ List objects at path
