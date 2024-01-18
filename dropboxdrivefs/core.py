@@ -61,15 +61,22 @@ class DropboxDriveFileSystem(AbstractFileSystem):
         self.session = requests.Session()
         self.session.auth = ("Authorization", self.dbx._oauth2_access_token)
 
-    def ls(self, path, detail=True, **kwargs):
+    def ls(self, path, detail=True, recursive=False, **kwargs):
         """ List objects at path
+        Parameters:
+        ----------
+        detail: bool
+            should we add the metadate with the path
+            
+        recursive: bool
+            should be list recursively all folders and file inside the path
         """
         path = path.replace("//", "/")
         list_file = []
 
         try:
             list_item = self.dbx.files_list_folder(
-                path, recursive=True, include_media_info=True
+                path, recursive=recursive, include_media_info=True
             )
         except ApiError as error:
             logging.warning(error)
