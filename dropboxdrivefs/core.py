@@ -176,7 +176,33 @@ class DropboxDriveFileSystem(AbstractFileSystem):
                 return {"name": metadata.path_display, "size": None, "type": None}
         else:
             return metadata.path_display
-
+        
+    def copy(self, path1, path2, recursive=True, **kwargs):
+        """ Copy objects from path1 to path2
+        Parameters:
+        ----------
+        path1: a folder or file, or a list of folders or files
+            should we add the metadate with the path
+        path2: a folder or a file
+        recursive: bool
+            whether to copy files in a folder recursively.
+        """
+        if isinstance(path1, list):
+            for file_path in path1:
+                assert not file_path.endswith('/'), 'multiple file copy should takes files as input'
+                self.copy(file_path, path2)
+        else:
+            if path1.endswith('/') and path2.endswith('/'):
+                assert recursive, 'recursive should be True for folder copying'
+                if not self.exists(path2[:-1]):
+                    self.dbx.files_copy(path1[:-1], path2[:-1])
+                else:
+                    self.rm(path2[:-1], recursive=True)
+                    self.dbx.files_copy(path1[:-1], path2[:-1])
+            elif path2.endswith('/'):
+                self.dbx.files_copy(path1, path2 + path1.split('/')[-1])
+            else:
+                self.dbx.files_copy(path1, path2)
 
 class DropboxDriveFile(AbstractBufferedFile):
     """ fetch_all, fetch_range, and read method are based from the http implementation
