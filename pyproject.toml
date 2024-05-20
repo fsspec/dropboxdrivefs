@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dropboxdrivefs"
+version = "1.4.0"
+description = "Dropbox implementation for fsspec module"
+readme = "README.md"
+
+requires-python = ">=3.5"
+license = { text = "BSD License" }
+
+dependencies = [
+    "fsspec",
+    "requests",
+    "dropbox"
+]
+
+authors = [
+    { name = "Marine Chaput", email = "marine.chaput@hotmail.fr" }
+]
+urls = { "Homepage" = "https://github.com/fsspec/dropboxdrivefs" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+
+[tool.setuptools.packages.find]
+where = ["dropboxdrivefs"]
