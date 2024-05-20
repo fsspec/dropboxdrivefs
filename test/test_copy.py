@@ -8,7 +8,7 @@ from dropboxdrivefs import DropboxDriveFileSystem
 
 @pytest.fixture
 def dropbox_fs():
-    fs = DropboxDriveFileSystem('/')
+    fs = DropboxDriveFileSystem('123')
     if not fs.exists('/source'):
         fs.mkdir('/source')
     if not fs.exists('/source/subdir'):
