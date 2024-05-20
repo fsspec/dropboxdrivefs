@@ -1,10 +1,56 @@
 import unittest
-from unittest.mock import patch
-
+from unittest.mock import patch, call
 import dropbox
 
 import dropboxdrivefs
 from dropboxdrivefs import DropboxDriveFileSystem
+
+import os
+
+# Get the directory containing the current file
+dropboxdrivefs_dir = os.path.dirname(os.path.dirname( os.path.abspath(__file__)))
+
+
+@patch.object(dropbox.Dropbox, "files_copy")
+class TestDropboxCopy(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        self.fs = DropboxDriveFileSystem('123')
+
+    def test_copy_dir_to_dir_recursive(self, mock_files_copy):
+        self.fs.cp(os.path.join(dropboxdrivefs_dir, "example_file/"), "/target/newdir/", recursive=True)
+        self.assertEqual(mock_files_copy.call_count, 1)
+        mock_files_copy.assert_has_calls([call(os.path.join(dropboxdrivefs_dir, "example_file"), "/target/newdir")])
+    
+
+    def test_copy_dir_to_dir_non_recursive(self, mock_files_copy):
+        self.fs.cp(os.path.join(dropboxdrivefs_dir, "example_file/"), "/target/newdir/", recursive=True)
+        with self.assertRaises(AssertionError) as context:
+            self.fs.cp(os.path.join(dropboxdrivefs_dir, "example_file/"), "/target/newdir/", recursive=False)
+        self.assertEqual(str(context.exception), "recursive should be True for folder copying")
+    
+    def test_copy_file_to_dir(self, mock_files_copy): # 1a. File to existing directory
+        self.fs.cp(os.path.join(dropboxdrivefs_dir, "example_file/test_db/test1.txt"), '/target/')
+        self.assertEqual(mock_files_copy.call_count, 1)
+        mock_files_copy.assert_has_calls([call(os.path.join(dropboxdrivefs_dir, "example_file/test_db/test1.txt"), "/target/test1.txt")])
+    
+
+    def test_copy_file_to_file(self, mock_files_copy):
+        # 1d. File to File in new directory
+        self.fs.cp(os.path.join(dropboxdrivefs_dir, "example_file/test_db/test1.txt"), "/target/newdir/newfile.txt")
+        self.assertEqual(mock_files_copy.call_count, 1)
+        mock_files_copy.assert_has_calls([call(os.path.join(dropboxdrivefs_dir, "example_file/test_db/test1.txt"), "/target/newdir/newfile.txt")])
+    
+
+    def test_copy_multiple_files_to_dir(self, mock_files_copy):
+
+        self.fs.cp([os.path.join(dropboxdrivefs_dir, "example_file/test_db/test1.txt"), 
+                    os.path.join(dropboxdrivefs_dir, "example_file/test_db/test2.txt")], "/target/")
+        self.assertEqual(mock_files_copy.call_count, 2)
+        mock_files_copy.assert_has_calls([call(os.path.join(dropboxdrivefs_dir, "example_file/test_db/test1.txt"), "/target/test1.txt"), 
+                                          call(os.path.join(dropboxdrivefs_dir, "example_file/test_db/test2.txt"), "/target/test2.txt")], 
+                                          any_order=True)
 
 
 @patch.object(dropbox.Dropbox, "files_list_folder")
