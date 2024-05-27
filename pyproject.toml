@@ -34,4 +34,4 @@ classifiers = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["dropboxdrivefs"]
+where = ["."]
